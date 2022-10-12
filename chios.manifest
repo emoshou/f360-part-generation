@@ -1,0 +1,10 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"script",
+	"author":	"ESM",
+	"description":	{
+		"":	"chios model generator"
+	},
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true
+}
