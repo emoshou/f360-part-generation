@@ -2,10 +2,10 @@
 import adsk.core, adsk.fusion
 
 # Standard Python Libraries
-import traceback, random, time
+import traceback, random, time, os
 
 # Global variable definition
-numComponents = 100
+numComponents = 3
 
 minSizeWidth = 1000
 minSizeHeight = 1000
@@ -25,7 +25,6 @@ ui  = app.userInterface
 ui.messageBox('Hello script')
 '''
 
-
 def run(context):
     ui = None
     
@@ -34,21 +33,70 @@ def run(context):
 
     try:
 
+        # get active design        
         app = adsk.core.Application.get()
         ui = app.userInterface
+        product = app.activeProduct
+        design = adsk.fusion.Design.cast(product)
+        
+        # Get the root component of the active design
+        rootComp = design.rootComponent
+
+        # get the script location
+        scriptDir = os.path.dirname(os.path.realpath(__file__)) + '/data' 
+        # create a single exportManager instance
+        exportMgr = design.exportManager
 
         for i in range(numComponents):
-            createComponent()
+            comp = createComponent(rootComp, app, ui, product, design)
+            # Save the 3D information
+            save3D(app, ui, product, design, scriptDir, exportMgr, comp)
+            # TODO: Generate Drawings
+            # TODO: Save darwings
+            
+            # Delete the component
+            delComponent(rootComp, app, ui, product, design, comp)
+            
 
-        ui.messageBox(f'time to run: {time.time() - t0} seconds')
+        timeToRun = time.time() - t0
+        ui.messageBox(f'time to run: {timeToRun/60} minutes for {numComponents} parts for {numComponents/timeToRun*60} parts per minute')
 
     except:
         if ui:
 
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
+def delComponent(rootComp, app, ui, product, design, comp):
 
-def createComponent():
+    # Build a list of unique immediate occurrences of the component.
+    occurrences = rootComp.allOccurrencesByComponent(comp)
+    for o in occurrences:
+        o.deleteMe()
+
+
+
+def save3D(app, ui, product, design, scriptDir, exportMgr, comp):
+
+        # export the component one by one with a specified format
+        compName = comp.name
+        fileNameF3D = scriptDir + "/f3d/" + compName
+        fileNameSTP = scriptDir + "/stp/" + compName
+
+        '''
+        # export the component with SAT format
+        satOptions = exportMgr.createSATExportOptions(fileName, comp)
+        exportMgr.execute(satOptions)
+        '''
+        # export the component with F3D format
+        archOptions = exportMgr.createFusionArchiveExportOptions(fileNameF3D, comp)
+        exportMgr.execute(archOptions)
+            
+        # export the component with STP format
+        stpOptions = exportMgr.createSTEPExportOptions(fileNameSTP, comp)
+        exportMgr.execute(stpOptions)
+
+
+def createComponent(rootComp, app, ui, product, design):
         ''' Create a component '''
 
         ## Grab global variables 
@@ -63,15 +111,6 @@ def createComponent():
         global maxSizeWidth
         global maxSizeHeight
         global maxPartThickness
-
-        app = adsk.core.Application.get()
-        ui = app.userInterface
-
-        product = app.activeProduct
-        design = adsk.fusion.Design.cast(product)
-
-        # Get the root component of the active design
-        rootComp = design.rootComponent
 
         allOccs = rootComp.occurrences
         transform = adsk.core.Matrix3D.create()
@@ -91,13 +130,6 @@ def createComponent():
 
         ## Get sketch circles
         sketchCircles = sketch1.sketchCurves.sketchCircles
-
-        '''
-        # Creating debug dialog
-        app = adsk.core.Application.get()
-        ui = app.userInterface
-        ui.messageBox(f'{payload}')
-        '''
 
         # Create sketch rectangle
         ## Start rectangle from zero always (for project, assume 0,0,0 is refernece point and always exists)
@@ -120,7 +152,7 @@ def createComponent():
         circles = sketch1.sketchCurves.sketchCircles
 
         # Generate random  number of holes
-        numHoles = random.randrange(4)
+        numHoles = random.randrange(1,4)
 
         # Generate holder for holes
         circleList = []
@@ -154,3 +186,6 @@ def createComponent():
         # Create the extrusion
         ext1 = extrudes1.add(extInput1)
         print(subComp1.revisionId)
+
+
+        return(subComp1)
