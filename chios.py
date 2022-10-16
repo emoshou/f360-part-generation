@@ -17,6 +17,9 @@ maxSizeWidth = 10000
 maxSizeHeight = 10000
 maxPartThickness = 1000
 
+# Number to start with for naming of files
+startName = 1
+
 
 '''
 # Creating debug dialog
@@ -26,6 +29,9 @@ ui.messageBox('Hello script')
 '''
 
 def run(context):
+
+    global startName
+
     ui = None
     
     # Find current time for determining runtime
@@ -50,12 +56,16 @@ def run(context):
         for i in range(numComponents):
             comp = createComponent(rootComp, app, ui, product, design)
             # Save the 3D information
-            save3D(app, ui, product, design, scriptDir, exportMgr, comp)
+            save3D(app, ui, product, design, scriptDir, exportMgr, startName, comp)
             # TODO: Generate Drawings
             # TODO: Save darwings
             
             # Delete the component
             delComponent(rootComp, app, ui, product, design, comp)
+
+
+            # Tick startName up one
+            startName += 1
             
 
         timeToRun = time.time() - t0
@@ -75,12 +85,16 @@ def delComponent(rootComp, app, ui, product, design, comp):
 
 
 
-def save3D(app, ui, product, design, scriptDir, exportMgr, comp):
+def save3D(app, ui, product, design, scriptDir, exportMgr, startName, comp):
+        ''' export the component one by one with a specified format '''
 
-        # export the component one by one with a specified format
-        compName = comp.name
-        fileNameF3D = scriptDir + "/f3d/" + compName
-        fileNameSTP = scriptDir + "/stp/" + compName
+        '''
+        # Moved away from this naming schele by using startName instead
+         compName = comp.name
+        '''
+
+        fileNameF3D = scriptDir + "/f3d/" + str(startName)
+        fileNameSTP = scriptDir + "/stp/" + str(startName)
 
         '''
         # export the component with SAT format
